@@ -40,7 +40,7 @@ async function run() {
 
     // verify token
     const verifyToken = (req, res, next) => {
-      console.log("inside verify token", req.headers.authorization);
+      //   console.log("inside verify token", req.headers.authorization);
       if (!req.headers.authorization) {
         return res.status(401).send({ message: "unauthorized access" });
       }
@@ -119,6 +119,12 @@ async function run() {
     // menu api
     app.get("/menu", async (req, res) => {
       const result = await menuCollection.find().toArray();
+      res.send(result);
+    });
+
+    app.post("/menu", async (req, res) => {
+      const item = req.body;
+      const result = await menuCollection.insertOne(item);
       res.send(result);
     });
 
