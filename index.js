@@ -3,6 +3,7 @@ const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const nodemailer = require("nodemailer");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 3000;
 
@@ -228,12 +229,38 @@ async function run() {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
       console.log("payments info", payment);
+      // delete cart items
       const query = {
         _id: {
           $in: payment.cartIds.map((id) => new ObjectId(id)),
         },
       };
       const deleteResult = await cartCollection.deleteMany(query);
+
+      // send email
+      const userEmail = req.body.email;
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+      const mailOptions = {
+        from: `'Bistro Boss' <${process.env.EMAIL_USER}>`,
+        to: userEmail,
+        subject: "Payment Confirmation",
+        text: `Dear customer, your payment of $${payment.price} has been successfully processed. Thank you for your purchase!`,
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error("Error sending email:", error);
+        } else {
+          console.log("Email sent: " + info.response);
+        }
+      });
+
       res.send({ paymentResult, deleteResult });
     });
 
